@@ -1,0 +1,9 @@
+[Unit]
+Description=Run On-Call Alert Monitor daily at 10:00PM
+
+[Service]
+OnCalendar=*-*-* 22:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,8 @@
+[Unit]
+Description=On-Call Alert Monitor
+
+[Service]
+ExecStart=oncall-monitor
+
+[Install]
+WantedBy=multi-user.target
