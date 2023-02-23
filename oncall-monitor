@@ -8,10 +8,10 @@
 
 # Check if a sound file is provided via environment variable. Otherwise exit
 if [[ -z "${ONCALL_SOUND_FILE}" ]]; then
+    sound_file="${ONCALL_SOUND_FILE}"
+else  
     echo 'ONCALL_SOUND_FILE environment variable not set.'
     exit 1
-else  
-    sound_file="${ONCALL_SOUND_FILE}"
 fi
 
 # Check if a input volume is provided via environment variable. Otherwise default to 10%
@@ -29,15 +29,14 @@ while [[ $(date +%s) -lt $end_time_epoch ]]; do
 
     pactl set-source-volume "$device" "${volume}%" 
     if [ $? ]; then
-        exit 1
-    else
         echo "Set audio input volume to: $volume"
+    else
+        exit 1
     fi    
 
     parec --rate 44100 -d $device | LC_ALL=C fgrep -qm 1 .; 
     echo "Sound detected at: $(date)"
     
-    trap "echo Exited!; exit;" SIGINT SIGTERM 
     while [[ true ]]; do
         aplay -r 480000 "$sound_file" 2> /dev/null
     done

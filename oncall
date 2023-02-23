@@ -20,10 +20,10 @@ done
 shift $(($OPTIND - 1))
 
 if [[ -z "${ONCALL_SOUND_FILE}" ]]; then
+    sound_file="${ONCALL_SOUND_FILE}"
+else  
     echo 'ONCALL_SOUND_FILE environment variable not set.'
     exit 1
-else  
-    sound_file="${ONCALL_SOUND_FILE}"
 fi
 
 start() {
@@ -32,22 +32,22 @@ start() {
         echo "Checking the service status for reassurance ..."
         systemctl --user status oncall-monitor.service > /dev/null
         if [[ $? ]]; then
+            sleep 5 
+            echo "Confirmed service started successfully"
+        else
             echo "Service failed to start. Sounding the alarm."
             trap "echo Exited!; exit;" SIGINT SIGTERM
             while [[ true ]]; do
                 aplay -r 480000 "$sound_file" 2> /dev/null
             done
-        else
-            sleep 5 
-            echo "Confirmed service started successfully"
         fi
     }
-    if [ ! -z "$sflag" ]; then
+    if [ -z "$sflag" ]; then
         if [ -z "$sval" ]; then
-            echo "No value for seconds. Please specify a value for -s"
-        else
             sleep "$sval"
             startcheck
+        else
+            echo "No value for seconds. Please specify a value for -s"
         fi
     else
         startcheck
