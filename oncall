@@ -19,7 +19,7 @@ while getopts s: name; do
 done
 shift $(($OPTIND - 1))
 
-if [[ -z "${ONCALL_SOUND_FILE}" ]]; then
+if [[ ! -z "${ONCALL_SOUND_FILE}" ]]; then
     sound_file="${ONCALL_SOUND_FILE}"
 else  
     echo 'ONCALL_SOUND_FILE environment variable not set.'
@@ -42,8 +42,8 @@ start() {
             done
         fi
     }
-    if [ -z "$sflag" ]; then
-        if [ -z "$sval" ]; then
+    if [ ! -z "$sflag" ]; then
+        if [ ! -z "$sval" ]; then
             sleep "$sval"
             startcheck
         else

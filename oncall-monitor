@@ -7,7 +7,7 @@
 [[ -z "${ONCALL_END_TIME}" ]] && end_time='08:00' || end_time="${ONCALL_END_TIME}"
 
 # Check if a sound file is provided via environment variable. Otherwise exit
-if [[ -z "${ONCALL_SOUND_FILE}" ]]; then
+if [[ ! -z "${ONCALL_SOUND_FILE}" ]]; then
     sound_file="${ONCALL_SOUND_FILE}"
 else  
     echo 'ONCALL_SOUND_FILE environment variable not set.'
