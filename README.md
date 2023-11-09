@@ -1,6 +1,9 @@
 # Oncall Monitor
 This program utilizes Pulse Audio to monitor an input device, outputting an alarm if sound is detected.
 
+## Installation
+Run install.sh without root.
+
 ## Usage
 The included `oncall` script eases the handling of the service. This is a particularly useful shorthad for times where you are awoken by a false,
 or non-critical alarm while oncall and just want to return to bed. Additional checks are also performed to alert in cases where the service fails
@@ -37,3 +40,6 @@ Options for the service are set via the oncall config command:
 ## Timer
 A timer file is also provided for convenience. May be useful so monitoring is automatically started every night at a certain time.
 
+## Troubleshooting
+Review the `oncall-monitor` service status and logs: `systemctl --user status oncall-monitor`
+If there is issues with playing the sound file, try playing it directly with aplay: `aplay -r 48000 "$soundfile" 2> /dev/null` 
