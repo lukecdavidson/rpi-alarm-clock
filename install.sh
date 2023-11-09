@@ -1,0 +1,12 @@
+mkdir -p "$HOME/.local/share/oncall-monitor"
+mkdir -p "$HOME/.local/bin"
+touch "$HOME/.local/share/oncall-monitor/device"
+touch "$HOME/.local/share/oncall-monitor/inputvol"
+touch "$HOME/.local/share/oncall-monitor/endtime"
+cp oncall "$HOME/.local/bin"
+cp oncall-monitor "$HOME/.local/bin"
+chmod +x "$HOME/.local/bin/oncall"
+chmod +x "$HOME/.local/bin/oncall-monitor"
+cp oncall-monitor.service "$HOME/.config/systemd/user/"
+cp oncall-monitor.timer "$HOME/.config/systemd/user/"
+systemctl --user daemon-reload

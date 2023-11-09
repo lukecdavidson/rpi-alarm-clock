@@ -1,11 +1,14 @@
 #!/bin/bash
 
+sound_file='/home/luke/git/remote/oncall-monitor/siren.wav'
+
 usage() {
     printf "Usage: %s: [-s seconds] COMMAND\n" $0
     echo "COMMAND   DESCRIPTION"
     echo "start     Start the service." 
     echo "stop      Stop the service." 
     echo "restart   Restart the oncall service. Use [-s seconds] flag for a delayed restart." 
+    echo "config    View or set configuration."
     exit 2
 }
 
@@ -19,21 +22,13 @@ while getopts s: name; do
 done
 shift $(($OPTIND - 1))
 
-if [[ ! -z "${ONCALL_SOUND_FILE}" ]]; then
-    sound_file="${ONCALL_SOUND_FILE}"
-else  
-    echo 'ONCALL_SOUND_FILE environment variable not set.'
-    exit 1
-fi
-
 start() {
     startcheck() {
         systemctl --user start oncall-monitor.service 
-        echo "Checking the service status for reassurance ..."
+	sleep 3
         systemctl --user status oncall-monitor.service > /dev/null
         if [[ $? ]]; then
-            sleep 5 
-            echo "Confirmed service started successfully"
+            echo "Service started successfully"
         else
             echo "Service failed to start. Sounding the alarm."
             trap "echo Exited!; exit;" SIGINT SIGTERM
@@ -68,12 +63,32 @@ stop() {
 
 restart() {
     systemctl --user stop oncall-monitor.service
+    sleep 3
     start
+}
+
+config() {
+    setdevice() {
+        pactl get-source-volume "$1" > /dev/null
+	if [ $? == 0 ]; then
+            echo "$1" > "$HOME/.local/share/oncall-monitor/device"
+        fi
+    } 
+    if [ "$2" == "set" ]; then
+        case "$3" in
+            device)	setdevice "$4";;
+            wav)	cp "$4" "$HOME/.local/share/oncall-monitor/siren.wav";;
+	esac
+    fi
+    if [ "$2" == "get" ]; then
+        echo "Device: $(cat $HOME/.local/share/oncall-monitor/device)"
+    fi
 }
 
 case "$1" in
     start)      start;;
     stop)       stop;;
     restart)    restart;;
+    config)     config "$@";;
     *)          usage;;
 esac

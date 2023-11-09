@@ -1,44 +1,32 @@
 #!/usr/bin/bash
 
-# Check if a device is provided via environment variable. Otherwise default to default Pulse Audio input device
-[[ -z "${ONCALL_INPUT_DEV}" ]] && device=$(pactl get-default-source) || device="${ONCALL_INPUT_DEV}"
+device="$(cat $HOME/.local/share/oncall-monitor/device)"
+endtime="$(cat $HOME/.local/share/oncall-monitor/endtime)"
+inputvol="$(cat $HOME/.local/share/oncall-monitor/inputvol)"
+soundfile="$HOME/.local/share/oncall-monitor/siren.wav"
 
-# Check if a end time is provided via environment variable. Otherwise default to 8:00
-[[ -z "${ONCALL_END_TIME}" ]] && end_time='08:00' || end_time="${ONCALL_END_TIME}"
+# Format endtime to epoch time for comparison with current time. Also set end time to the same time on the next day, if the time has already passed.
+[[ $(date -d "$endtime" +%s) -le $(date +%s) ]] && endtime_epoch=$(date -d "+1day $endtime" +%s) || endtime_epoch=$(date -d "$endtime" +%s)
 
-# Check if a sound file is provided via environment variable. Otherwise exit
-if [[ ! -z "${ONCALL_SOUND_FILE}" ]]; then
-    sound_file="${ONCALL_SOUND_FILE}"
-else  
-    echo 'ONCALL_SOUND_FILE environment variable not set.'
+# Format endtime to epoch time for comparison with current time. Also set end time to the same time on the next day, if the time has already passed.
+[[ $(date -d "$endtime" +%s) -le $(date +%s) ]] && endtime_epoch=$(date -d "+1day $endtime" +%s) || endtime_epoch=$(date -d "$endtime" +%s)
+
+pactl set-source-volume "$device" "${inputvol}%" 
+if [ $? ]; then
+    echo "Set audio input inputvol to: $inputvol"
+else
     exit 1
-fi
+fi    
 
-# Check if a input volume is provided via environment variable. Otherwise default to 10%
-[[ -z "${ONCALL_INPUT_VOLUME}" ]] && volume='10' || volume="${ONCALL_INPUT_VOLUME}"
-
-# Format end_time to epoch time for comparison with current time. Also set end time to the same time on the next day, if the time has already passed.
-[[ $(date -d "$end_time" +%s) -le $(date +%s) ]] && end_time_epoch=$(date -d "+1day $end_time" +%s) || end_time_epoch=$(date -d "$end_time" +%s)
-
-# Format end_time to epoch time for comparison with current time. Also set end time to the same time on the next day, if the time has already passed.
-[[ $(date -d "$end_time" +%s) -le $(date +%s) ]] && end_time_epoch=$(date -d "+1day $end_time" +%s) || end_time_epoch=$(date -d "$end_time" +%s)
-
-while [[ $(date +%s) -lt $end_time_epoch ]]; do
-    echo "Automatically quitting at: $(date -d @${end_time_epoch})"
+while [[ $(date +%s) -lt $endtime_epoch ]]; do
+    echo "Automatically quitting at: $(date -d @${endtime_epoch})"
     echo "Using pulse audio device: $device"
 
-    pactl set-source-volume "$device" "${volume}%" 
-    if [ $? ]; then
-        echo "Set audio input volume to: $volume"
-    else
-        exit 1
-    fi    
-
-    parec --rate 44100 -d $device | LC_ALL=C fgrep -qm 1 .; 
+    parec --rate 48000 -d $device 2> /dev/null | LC_ALL=C fgrep -qm 1 .; 
     echo "Sound detected at: $(date)"
     
     while [[ true ]]; do
-        aplay -r 480000 "$sound_file" 2> /dev/null
+        aplay -r 48000 "$soundfile" 2> /dev/null
     done
 done
 
