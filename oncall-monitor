@@ -1,15 +1,8 @@
 #!/usr/bin/bash
 
 device="$(cat $HOME/.local/share/oncall-monitor/device)"
-endtime="$(cat $HOME/.local/share/oncall-monitor/endtime)"
 inputvol="$(cat $HOME/.local/share/oncall-monitor/inputvol)"
 soundfile="$HOME/.local/share/oncall-monitor/siren.wav"
-
-# Format endtime to epoch time for comparison with current time. Also set end time to the same time on the next day, if the time has already passed.
-[[ $(date -d "$endtime" +%s) -le $(date +%s) ]] && endtime_epoch=$(date -d "+1day $endtime" +%s) || endtime_epoch=$(date -d "$endtime" +%s)
-
-# Format endtime to epoch time for comparison with current time. Also set end time to the same time on the next day, if the time has already passed.
-[[ $(date -d "$endtime" +%s) -le $(date +%s) ]] && endtime_epoch=$(date -d "+1day $endtime" +%s) || endtime_epoch=$(date -d "$endtime" +%s)
 
 pactl set-source-volume "$device" "${inputvol}%" 
 if [ $? ]; then
@@ -18,8 +11,7 @@ else
     exit 1
 fi    
 
-while [[ $(date +%s) -lt $endtime_epoch ]]; do
-    echo "Automatically quitting at: $(date -d @${endtime_epoch})"
+while [[ true ]]; do
     echo "Using pulse audio device: $device"
 
     parec --rate 48000 -d $device 2> /dev/null | LC_ALL=C fgrep -qm 1 .; 
