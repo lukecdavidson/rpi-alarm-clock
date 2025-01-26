@@ -1,24 +1,61 @@
-#!/usr/bin/bash
+#!/bin/bash
+#
+# RPi Alarm Clock Oncall Monitor. Monitors an input sound device for sound.
+#
+# Copyright (C) 2025  Luke Davidson  All rights reserved.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
 
-device="$(cat $HOME/.local/share/oncall-monitor/device)"
-inputvol="$(cat $HOME/.local/share/oncall-monitor/inputvol)"
-soundfile="$HOME/.local/share/oncall-monitor/siren.wav"
+inputvol=$1
+device=$2
+
+IFS=$'\n' read -r -d '' -a sources < <( pactl list short sources | awk '{print $2}'  && printf '\0' )
+if [ -z "$device" ]; then
+    device=$(pactl get-default-source)
+    echo "No source device specified. Using default source device."
+fi
+echo "Detected pulseaudio sources:"
+match=0
+for i in "${sources[@]}"; do
+    echo "$i"
+    if [ $i = "$device" ]; then
+        match=1
+        break
+    fi
+done
+if [ $match -eq 0 ]; then
+    echo "Fatal error. Source device $device not found"
+    exit 1
+fi
+echo "Using input device: $device"
+
+if [ -z "$inputvol" ]; then
+    inputvol=50
+    echo "No input volume specified. Setting to 100%"
+fi 
 
 pactl set-source-volume "$device" "${inputvol}%" 
 if [ $? ]; then
-    echo "Set audio input inputvol to: $inputvol"
+    echo "Set audio input inputvol to: $inputvol%"
 else
-    exit 1
+    echo "Failed to set source input volume exiting"
+    exit 2
 fi    
 
-while [[ true ]]; do
-    echo "Using pulse audio device: $device"
-
-    parec --rate 48000 -d $device 2> /dev/null | LC_ALL=C fgrep -qm 1 .; 
-    echo "Sound detected at: $(date)"
-    
-    while [[ true ]]; do
-        aplay -r 48000 "$soundfile" 2> /dev/null
-    done
+while [ 0 ]; do
+    parec --rate 48000 -d $device 2> /dev/null | LC_ALL=C fgrep -qm 1 . 2> /dev/null && echo "Sound detected at: $(date)" && echo "start" > /dev/tcp/localhost/9999 
+    sleep 1
 done
 

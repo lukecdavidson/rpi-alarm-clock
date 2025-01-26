@@ -1,0 +1,72 @@
+#!/bin/bash
+#
+# RPi Alarm Clock installer
+#
+# Copyright (C) 2025  Luke Davidson  All rights reserved.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+action=$1
+
+if [[ $(/usr/bin/id -u) -ne 0 ]]; then
+    echo "Not running as root"
+    exit
+fi
+
+if [ -z "$action" ]; then
+    action="install"
+fi
+
+if [ "$action" = "install" ]; then
+    mkdir -p /usr/local/bin
+    cp alarm-server /usr/local/bin/
+    chmod +x /usr/local/bin/alarm-server
+    cp alarm /usr/local/bin/
+    chmod +x /usr/local/bin/alarm
+    cp oncall-monitor /usr/local/bin/
+    chmod +x /usr/local/bin/oncall-monitor
+    
+    mkdir -p /etc/systemd/system
+    cp alarm-server.service /etc/systemd/system/
+    cp alarm.service /etc/systemd/system/
+    cp alarm.timer /etc/systemd/system/
+    cp oncall-monitor.service /etc/systemd/user/
+    cp oncall-monitor.timer /etc/systemd/user/
+    
+    systemctl daemon-reload
+    systemctl enable --now alarm-server
+    echo "Successfully installed"
+    echo "Start the oncall-monitor with:"
+    echo "    loginctl enable-linger"
+    echo "    systemctl --user start oncall-monitor"
+fi
+
+if [ "$action" = "uninstall" ]; then
+    rm -f /usr/local/bin/alarm-server
+    rm -f /usr/local/bin/alarm
+    rm -f /usr/local/bin/oncall-monitor
+    systemctl disable --now alarm-server.server
+    systemctl disable --now alarm.service
+    systemctl disable --now alarm.timer
+    systemctl disable --now oncall-monitor.service
+    systemctl disable --now oncall-monitor.timer
+    rm -f /etc/systemd/system/alarm-server.service
+    rm -f /etc/systemd/system/alarm.service
+    rm -f /etc/systemd/system/alarm.timer
+    rm -f /etc/systemd/system/oncall-monitor.service
+    rm -f /etc/systemd/system/oncall-monitor.timer
+    systemctl daemon-reload
+    rm -f /usr/local/bin/alarm-installer
+fi

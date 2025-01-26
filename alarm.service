@@ -1,0 +1,8 @@
+[Unit]
+Description=Alert Trigger
+
+[Service]
+ExecStart=alarm start
+
+[Install]
+WantedBy=multi-user.target

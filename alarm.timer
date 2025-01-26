@@ -1,0 +1,8 @@
+[Unit]
+Description=Alert at 7:30AM weekdays
+
+[Timer]
+OnCalendar=Mon-Fri *-*-* 7:30:00
+
+[Install]
+WantedBy=timers.target

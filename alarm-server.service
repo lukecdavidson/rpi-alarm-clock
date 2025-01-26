@@ -1,0 +1,8 @@
+[Unit]
+Description=Alarm Clock Server
+
+[Service]
+ExecStart=alarm-server
+
+[Install]
+WantedBy=multi-user.target

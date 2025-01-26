@@ -1,45 +1,69 @@
-# Oncall Monitor
-This program utilizes Pulse Audio to monitor an input device, outputting an alarm if sound is detected.
+# RPi Alarm Clock
+Raspberry Pi alarm clock, utilizing a simple buzzer, LED, and button. Also 
+includes `oncall-monitor`, a script for monitoring the audio output of an oncall
+ phone, so that you never miss a notification.
 
-## Installation
-Run install.sh without root.
+## Hardware setup
+The script has the RPi pinout hardcoded:
 
-## Usage
-The included `oncall` script eases the handling of the service. This is a particularly useful shorthad for times where you are awoken by a false,
-or non-critical alarm while oncall and just want to return to bed. Additional checks are also performed to alert in cases where the service fails
-immediately on start.
+| GPIO Pin | Function                                                         |
+|----------|------------------------------------------------------------------|
+| 16       | Pull up reset button. Used to stop the alarm if it is triggered. |
+| 17       | Buzzer. Hooked up to an NPN transistor leading to a big buzzer.  |
+| 26       | LED. On when *alarm-server* is running.                          |
 
-    Usage: /home/luke/.local/bin/oncall: [-s seconds] COMMAND
-    COMMAND   DESCRIPTION
-    start     Start the service.
-    stop      Stop the service.
-    restart   Restart the oncall service. Use [-s seconds] flag for a delayed restart.
-    config    View or set configuration.
- 
-## Service
-The script which monitors the input runs in an systemd user service file. This is started via `systemctl --user start oncall-monitor.service` or `oncall start`.
+## Alarm Clock
+The main script runs a TCP socket server. The `alarm` command is a simple script
+ for writing start and stop commands to the server socket:
 
-Options for the service are set via the oncall config command:
+```
+alarm start # Triggers the alarm
+alarm stop  # Stops the alarm if it is triggered
+```
 
-* oncall config set device DEVICE
-    * Name of a pulse audio input device which will be used for monitoring. Example: `alsa_input.usb-046d_HD_Pro_Webcam_C920_8BBC58AF-02.analog-stereo`. Use `pactl list short sources` to get device names
-    * oncall config set device alsa_input.pci-0000_00_1b.0.analog-stereo
-* oncall config set endtime ENDTIME
-    * Time to stop the service. This would likely be just before your alarm to wake up. Example: `07:00`
-    * Must be in 24 hour format `HH:HH`
-    * oncall config set endtime "08:00"
-* oncall config set wav WAV
-    * Path to the file that will play as an alarm. Example: `Downloads/siren.wav`. The file is copied into the program's config directory, so you may remove the original file after this config is set.
-    * Must be playable by `aplay`. Will play on a loop until the service is stopped.
-    * oncall config set wav ./mysoundfile.wav
-* oncall config set inputvol VOLUME
-    * Sets the input volume on the input device via PulseAudio.
-    * Value must be between 1 and 100, with lower values having lower input sensitivity.
-    * oncall config set inputvol 40
+The *alarm.service* systemd service calls `alarm start`. This just allows us to 
+use the *alarm.timer* to schedule regular alarm times. Edit *OnCalender* in 
+*alarm.timer* as you see fit.
 
-## Timer
-A timer file is also provided for convenience. May be useful so monitoring is automatically started every night at a certain time.
+## Oncall Monitor
+The idea with `oncall-monitor` is that you have a company-provided oncall phone.
+ Notifications on the phone must be actioned but you may not hear the quick ding
+ of an incoming notification when it is 3AM. To solve this, plug the 3.5mm sound
+ output on the oncall phone into the Raspberry Pi as a microphone. I use a 3.5mm
+ jack to USB adapter as the RPi doesn't have a mic jack onboard. 
 
-## Troubleshooting
-Review the `oncall-monitor` service status and logs: `systemctl --user status oncall-monitor`
-If there is issues with playing the sound file, try playing it directly with aplay: `aplay -r 48000 "$soundfile" 2> /dev/null` 
+Start or enable the *oncall-monitor.service* or *oncall-monitor.timer* as needed.
+ It isn't started by default.
+
+The `oncall-monitor` command is run by the *oncall-monitor.service* and need not run
+directly. However, it does take 2 positional arguments which can be edited in 
+the systemd service definition:
+
+1. Input volume 
+2. Input device to monitor
+
+If not configured, the default pulseaudio source device is used. An example of 
+configuring this:
+
+```
+pactl list short sources | awk '{print $2}'  # Lists the sources, grab the one you need
+systemctl --user edit oncall-monitor  # Opens the editor where we edit ExecStart as shwon next
+```
+
+In the editor, write at the top of the file:
+
+```
+[Service]
+ExecStart=
+ExecStart=oncall-monitor 30 alsa_input.usb-C-Media_Electronics_Inc._USB_Audio_Device-00.mono-fallback
+```
+
+Note my input volume is 30%. I'd recommend testing with this a bit to confirm the
+ percentage you set is reliable. If not specified, the default is 50%.
+
+
+
+
+
+
+
