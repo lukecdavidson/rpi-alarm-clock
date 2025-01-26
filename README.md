@@ -12,6 +12,9 @@ The script has the RPi pinout hardcoded:
 | 17       | Buzzer. Hooked up to an NPN transistor leading to a big buzzer.  |
 | 26       | LED. On when *alarm-server* is running.                          |
 
+## Installation
+Clone the repo and run `alarm-installer`. Uninstall with `alarm-installer uninstall`.
+
 ## Alarm Clock
 The main script runs a TCP socket server. The `alarm` command is a simple script
  for writing start and stop commands to the server socket:
