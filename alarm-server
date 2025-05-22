@@ -24,17 +24,30 @@ import socketserver
 import sys
 
 stop_button = gpiozero.Button(pin=16, pull_up=True, hold_time=1)
+pause_button = gpiozero.Button(pin=27, pull_up=True, hold_time=7)
 led = gpiozero.LED(pin=26)
 buzzer = gpiozero.Buzzer(pin=17)
 led.on()
+paused = False
 
 def stop_alarm() -> None:
     buzzer.off()
 
 stop_button.when_held = stop_alarm
 
-def start_alarm() -> None:
-    buzzer.on()
+def toggle_pause(paused) -> None:
+    if not paused:
+        paused = True
+        led.off()
+    else:
+        paused = False
+        led.on()
+
+pause_button.when_held = toggle_pause
+
+def start_alarm(paused) -> None:
+    if not paused:
+        buzzer.on()
 
 class MyTCPHandler(socketserver.BaseRequestHandler):
     """
@@ -52,10 +65,11 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
         print(self.data)
         # just send back the same data, but upper-cased
         #self.request.sendall(self.data.upper())
-        if self.data == b'start':
-            start_alarm()
-        if self.data == b'stop':
-            stop_alarm() 
+        match repr(self.data):
+            case 'start':
+                start_alarm(paused)
+            case 'stop':
+                stop_alarm()
 
 
 if __name__ == "__main__":
